@@ -10,6 +10,8 @@ make run
 
 Then open http://localhost:8000.
 
+Docs: [design](docs/design.md) and [implementation plan](docs/plan.md).
+
 ## What it looks like
 
 The Value tab shows headline numbers, a cost versus function gain value map, and a per-surgeon table.
