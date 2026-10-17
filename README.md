@@ -12,6 +12,9 @@ Then open http://localhost:8000.
 
 ## Run with Docker
 
+Every merge to `main` publishes a new image to the GitHub container registry. `make docker-run` pulls and runs the
+newest one, no login needed.
+
 ```sh
 make docker-run
 ```
