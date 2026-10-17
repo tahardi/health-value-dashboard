@@ -6,6 +6,21 @@ from scipy import stats
 from app.schema import COST, GAIN, SURGEON
 
 NAN = math.nan
+SUMMARY_COLUMNS = (
+    SURGEON,
+    "cases",
+    "cost_n",
+    "cost_mean",
+    "cost_low",
+    "cost_high",
+    "gain_n",
+    "gain_mean",
+    "gain_low",
+    "gain_high",
+    "value",
+    "rate_n",
+    "rate",
+)
 
 
 def mean_ci(values: pd.Series) -> tuple[int, float, float, float]:
@@ -31,7 +46,7 @@ def headline(df: pd.DataFrame, rate_col: str) -> dict[str, float]:
 
 def surgeon_summary(df: pd.DataFrame, rate_col: str) -> pd.DataFrame:
     rows = [_surgeon_row(surgeon, group, rate_col) for surgeon, group in df.groupby(SURGEON)]
-    return pd.DataFrame(rows).sort_values(SURGEON, ignore_index=True)
+    return pd.DataFrame(rows, columns=SUMMARY_COLUMNS).sort_values(SURGEON, ignore_index=True)
 
 
 def _surgeon_row(surgeon: str, group: pd.DataFrame, rate_col: str) -> dict[str, object]:
