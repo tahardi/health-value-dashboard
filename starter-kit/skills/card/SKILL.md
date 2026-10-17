@@ -11,7 +11,13 @@ Implement the card named in the arguments, get it green locally and in CI, and l
 
 **Arguments:** `$ARGUMENTS`. The first word is the card key (`[A-Z]+-\d+`). If the second word is `force`, skip the blocker check.
 
-**Jira helper:** `python3 ~/.claude/skills/card/scripts/jira.py` with `get KEY`, `transition KEY STATUS`, `comment KEY TEXT`, `assign KEY`, or `strike-blockers KEY`. It reads credentials from `~/.config/jira/env`. Never print or echo that file.
+**Jira helper:** `python3 ~/.claude/skills/card/scripts/jira.py`. It reads credentials from `~/.config/jira/env`. Never print or echo that file. Commands:
+
+- `get KEY`, `transition KEY STATUS`, `comment KEY TEXT`, `assign KEY`, `strike-blockers KEY`: read and move a card.
+- `create PROJECT SUMMARY --description-file PATH [--parent KEY] [--points N] [--labels a,b]`: create a Task. The description file is markdown.
+- `edit KEY [--summary S] [--description-file PATH] [--points N] [--labels a,b]`: change only the given fields. `--labels` replaces the whole list.
+- `link BLOCKER BLOCKED`: mark BLOCKER as blocking BLOCKED.
+- `sprint KEY [KEY...]`: add cards to the active sprint on the first card's board.
 
 ## Precedence
 
