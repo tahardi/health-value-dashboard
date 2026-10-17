@@ -59,6 +59,12 @@ jobs:
         run: make reference
       - name: check tests/golden/ is current
         run: git add --all && git diff --cached --exit-code
+      - name: upload tests/golden/
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: golden
+          path: tests/golden/
 
   docker-build:
     name: docker-build

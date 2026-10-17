@@ -37,6 +37,13 @@ A demo Shiny for Python dashboard for surgical value metrics. It uses made-up da
 - `make docker-clean`: remove every local image of this app.
 - `make docker-prune`: remove old untagged images of this app, keeping the current `:dev` and `:latest`.
 
+## When make reference fails locally
+
+If `make reference` fails on your machine, do not block on it. Run `make install data format lint test docker-build`
+instead of `make pre-pr`, then push and let CI's `reference` job run R on Linux. If that job fails because
+`tests/golden/` is out of date, run `gh run download <run-id> -n golden -D tests/golden`, commit the files, and push
+again. Never edit golden files by hand.
+
 ## Rules
 
 - Screens and stats use `app/schema.py` constants, never column names.
