@@ -5,6 +5,8 @@ A demo Shiny for Python dashboard for surgical value metrics. It uses made-up da
 ## Layout
 
 - `app/app.py`: the Shiny app object, UI, and server.
+- `app/schema.py`: the column list and column name constants.
+- `app/data.py`: loads and checks a CSV of cases.
 - `tests/`: pytest tests, one `test_<module>.py` per module.
 
 ## Make Targets
