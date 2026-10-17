@@ -1,6 +1,8 @@
 IMAGE = ghcr.io/tahardi/health-value-dashboard
+IMAGE_LABEL = org.opencontainers.image.source=https://github.com/tahardi/health-value-dashboard
 
-.PHONY: install format lint test pre-pr run data reference docker-build docker-run-dev docker-run
+.PHONY: install format lint test pre-pr run data reference docker-build docker-run-dev docker-run \
+	docker-clean docker-prune
 
 install:
 	uv sync
@@ -41,6 +43,7 @@ docker-build:
 		-t health-value-dashboard:dev \
 		.
 
+# Runs the most recent local build, made by docker-build.
 docker-run-dev:
 	mkdir -p .hvd-data
 	docker run \
@@ -50,6 +53,7 @@ docker-run-dev:
 		-v $(PWD)/.hvd-data:/data \
 		health-value-dashboard:dev
 
+# Runs the most recent image published to the GitHub container registry.
 docker-run:
 	mkdir -p .hvd-data
 	docker run \
@@ -59,3 +63,15 @@ docker-run:
 		-p 8000:8000 \
 		-v $(PWD)/.hvd-data:/data \
 		$(IMAGE):latest
+
+docker-clean:
+	docker image ls -q \
+		--filter label=$(IMAGE_LABEL) \
+		| sort -u \
+		| xargs -r docker image rm -f
+
+docker-prune:
+	docker image prune \
+		--force \
+		--filter dangling=true \
+		--filter label=$(IMAGE_LABEL)
