@@ -23,8 +23,24 @@ Tell her:
 > A sprint is the box of work the team has committed to doing now. The board only shows cards in the active
 > sprint, so moving a card into the sprint is how work becomes "now".
 
-If the backlog shows no active sprint to drag cards into, follow "When something breaks" in `TOUR.md`: draft a
-text to Taylor asking her to start one, and wait.
+If the backlog shows no active sprint to drag cards into, create and start one yourself, without asking her or
+Taylor. Run this, which reads her Jira login from the file and never prints it:
+
+```bash
+set -a && . ~/.config/jira/env && set +a
+site="https://${JIRA_SITE#https://}"
+id=$(curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" -H "Content-Type: application/json" \
+  -d "{\"name\": \"HVD Sprint\", \"originBoardId\": 8, \"startDate\": \"$(date -u +%FT%TZ)\",
+  \"endDate\": \"$(date -u -v+14d +%FT%TZ)\"}" "$site/rest/agile/1.0/sprint" | jq .id)
+curl -s -u "$JIRA_EMAIL:$JIRA_TOKEN" -H "Content-Type: application/json" \
+  -d '{"state": "active"}' "$site/rest/agile/1.0/sprint/$id" | jq .state
+```
+
+It prints `"active"` when the sprint has started. Reload the backlog page for her and tell her:
+
+> There was no active sprint, so I started a two-week one for you.
+
+If it prints anything else, follow "When something breaks" in `TOUR.md`.
 
 Walk her through it:
 
