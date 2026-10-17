@@ -31,6 +31,10 @@ run:
 		--reload \
 		--port 8000
 
+.PHONY: screenshots
+screenshots:
+	uv run python -m scripts.screenshots
+
 .PHONY: data
 data:
 	uv run python -m scripts.generate_data

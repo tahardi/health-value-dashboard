@@ -10,6 +10,19 @@ make run
 
 Then open http://localhost:8000.
 
+## What it looks like
+
+The Value tab shows headline numbers, a cost versus function gain value map, and a per-surgeon table.
+
+![Value tab](docs/screenshots/value.png)
+
+The Data tab shows the current file, lets you upload a replacement CSV, and lists the expected columns.
+
+![Data tab](docs/screenshots/data.png)
+
+To refresh these images, run `make screenshots`. The first time, install the browser with
+`uv run playwright install chromium`.
+
 ## Run with Docker
 
 ```sh
