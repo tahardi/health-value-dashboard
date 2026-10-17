@@ -1,4 +1,4 @@
-.PHONY: install format lint test pre-pr run
+.PHONY: install format lint test pre-pr run data
 
 install:
 	uv sync
@@ -21,3 +21,6 @@ run:
 		app/app.py \
 		--reload \
 		--port 8000
+
+data:
+	uv run python -m scripts.generate_data
