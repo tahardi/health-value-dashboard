@@ -64,12 +64,14 @@ docker-run:
 		-v $(PWD)/.hvd-data:/data \
 		$(IMAGE):latest
 
+# Removes every local image of this app, including the current :dev and :latest.
 docker-clean:
 	docker image ls -q \
 		--filter label=$(IMAGE_LABEL) \
 		| sort -u \
 		| xargs -r docker image rm -f
 
+# Removes only old untagged images of this app, keeping the current :dev and :latest.
 docker-prune:
 	docker image prune \
 		--force \

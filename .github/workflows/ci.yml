@@ -25,4 +25,4 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v7
-      - run: docker build .
+      - run: make docker-build
