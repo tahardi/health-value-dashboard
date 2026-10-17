@@ -32,8 +32,8 @@ A demo Shiny for Python dashboard for surgical value metrics. It uses made-up da
 - `make screenshots`: rewrite `docs/screenshots/` with Playwright (needs `uv run playwright install chromium` once).
 - `make run`: serve the app at http://localhost:8000 with reload.
 - `make docker-build`: build the image as `health-value-dashboard:dev`.
-- `make docker-run-dev`: run `health-value-dashboard:dev` at http://localhost:8000, data in `.hvd-data/`.
-- `make docker-run`: pull and run `ghcr.io/tahardi/health-value-dashboard:latest` the same way.
+- `make docker-run-local`: run `health-value-dashboard:dev` at http://localhost:8000, data in `.hvd-data/`.
+- `make docker-run-registry`: pull and run `ghcr.io/tahardi/health-value-dashboard:latest` the same way.
 - `make docker-clean`: remove every local image of this app.
 - `make docker-prune`: remove old untagged images of this app, keeping the current `:dev` and `:latest`.
 

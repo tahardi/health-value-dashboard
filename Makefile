@@ -56,8 +56,8 @@ docker-build:
 		.
 
 # Runs the most recent local build, made by docker-build.
-.PHONY: docker-run-dev
-docker-run-dev:
+.PHONY: docker-run-local
+docker-run-local:
 	mkdir -p .hvd-data
 	docker run \
 		--rm \
@@ -67,8 +67,8 @@ docker-run-dev:
 		health-value-dashboard:dev
 
 # Runs the most recent image published to the GitHub container registry.
-.PHONY: docker-run
-docker-run:
+.PHONY: docker-run-registry
+docker-run-registry:
 	mkdir -p .hvd-data
 	docker run \
 		--rm \
