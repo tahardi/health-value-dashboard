@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+.hvd-data
+tests
+docs
+reference
+scripts
+starter-kit
+.claude
+.superpowers
+__pycache__
+.pytest_cache
+.ruff_cache
