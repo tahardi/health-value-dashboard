@@ -1,3 +1,17 @@
+# Reference implementation of the dashboard's statistics, written in base R.
+#
+# app/stats.py computes these numbers for the app. This script computes the same numbers
+# independently in R, from the same data/sample.csv, with R's own t.test() for the 95%
+# confidence intervals. It writes the results to tests/golden/ as one CSV per statistic and
+# rate measure, with the same columns and order as the Python output.
+#
+# tests/test_golden.py reruns the Python statistics and checks every value against these
+# files. If the two languages disagree, the test fails, so a mistake in the Python math
+# cannot slip through unnoticed.
+#
+# Run it with `make reference` (Docker) after changing a statistic or the sample data, then
+# commit the updated files in tests/golden/. Every new statistic gets matching code here.
+
 cases <- read.csv("data/sample.csv", stringsAsFactors = FALSE, na.strings = "")
 cases$function_gain <- cases$function_post - cases$function_pre
 rate_measures <- c("complication", "readmit_30d")
