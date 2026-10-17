@@ -6,6 +6,8 @@ import pytest
 
 from app.data import DataError, load
 
+# One good spreadsheet row, as the raw text a CSV file would hold. Each test case starts
+# from this row and changes one or two cells to create the problem it checks.
 VALID_ROW = {
     "case_id": "C0001",
     "surgeon": "Dr. Avery",
@@ -26,6 +28,8 @@ VALID_ROW = {
 }
 
 
+# Builds an in-memory CSV file from rows. The optional arguments drop a column, rename
+# headers, change line endings, or add text before the header, to mimic other spreadsheets.
 def csv_source(
     rows: list[dict[str, str]],
     drop: tuple[str, ...] = (),
@@ -39,10 +43,13 @@ def csv_source(
     return io.BytesIO((prefix + newline.join(lines) + newline).encode())
 
 
+# Returns a copy of VALID_ROW with the given cells replaced.
 def row(**changes: str) -> dict[str, str]:
     return {**VALID_ROW, **changes}
 
 
+# The table load() should return for VALID_ROW: typed values plus the computed
+# function_gain column. Arguments replace the expected value of a column.
 def valid_frame(**changes: object) -> pd.DataFrame:
     values: dict[str, object] = {
         "case_id": "C0001",
@@ -82,6 +89,9 @@ def valid_frame(**changes: object) -> pd.DataFrame:
     )
 
 
+# parametrize runs test_load once per pytest.param below. Each param is a CSV file
+# and either the table load() should return or the list of error messages it should raise.
+# The id names the case in pytest output, e.g. test_load[bad date].
 @pytest.mark.parametrize(
     ("source", "expected"),
     [
@@ -157,6 +167,9 @@ def valid_frame(**changes: object) -> pd.DataFrame:
         ),
     ],
 )
+# For error cases, pytest.raises checks that load() raises DataError and captures it so
+# its messages can be compared. Otherwise the returned table must match exactly,
+# including column order and types.
 def test_load(source: io.BytesIO, expected: pd.DataFrame | list[str]) -> None:
     # given
     data = source

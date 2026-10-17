@@ -1,4 +1,6 @@
-from app.schema import COLUMNS, Kind, filters, measures, rate_measures
+import pytest
+
+from app.schema import COLUMNS, Kind, Role, filters, measures, rate_measures
 
 
 def test_columns() -> None:
@@ -10,6 +12,8 @@ def test_columns() -> None:
 
     # then
     assert len(unique) == len(names)
+    for column in COLUMNS:
+        assert (column.higher_is_better is not None) == (column.role == Role.MEASURE)
 
 
 def test_filters() -> None:
@@ -23,18 +27,43 @@ def test_filters() -> None:
     assert names == expected
 
 
-def test_measures() -> None:
+@pytest.mark.parametrize(
+    ("kind", "expected"),
+    [
+        pytest.param(
+            None,
+            [
+                "length_of_stay_days",
+                "total_cost",
+                "implant_cost",
+                "complication",
+                "readmit_30d",
+                "function_pre",
+                "function_post",
+            ],
+            id="all",
+        ),
+        pytest.param(
+            Kind.NUMBER,
+            [
+                "length_of_stay_days",
+                "total_cost",
+                "implant_cost",
+                "function_pre",
+                "function_post",
+            ],
+            id="number",
+        ),
+        pytest.param(Kind.BOOLEAN, ["complication", "readmit_30d"], id="boolean"),
+        pytest.param(Kind.CATEGORY, [], id="category"),
+    ],
+)
+def test_measures(kind: Kind | None, expected: list[str]) -> None:
     # given
-    expected = [
-        "length_of_stay_days",
-        "total_cost",
-        "implant_cost",
-        "function_pre",
-        "function_post",
-    ]
+    wanted = kind
 
     # when
-    names = [c.name for c in measures(Kind.NUMBER)]
+    names = [c.name for c in measures(wanted)]
 
     # then
     assert names == expected
