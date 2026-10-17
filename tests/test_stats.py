@@ -56,20 +56,42 @@ def test_mean_ci(values: list[float], expected: tuple[int, float, float, float])
     assert result == pytest.approx(expected, nan_ok=True)
 
 
-def test_surgeon_summary() -> None:
+@pytest.mark.parametrize(
+    ("df", "surgeons", "counts", "gain_counts", "rates", "values"),
+    [
+        pytest.param(
+            cases(),
+            ["Dr. A", "Dr. B"],
+            [3, 2],
+            [2, 2],
+            [1 / 3, 1.0],
+            [7.5, 8.0],
+            id="two surgeons",
+        ),
+        pytest.param(cases().iloc[:0], [], [], [], [], [], id="no cases"),
+    ],
+)
+def test_surgeon_summary(
+    df: pd.DataFrame,
+    surgeons: list[str],
+    counts: list[int],
+    gain_counts: list[int],
+    rates: list[float],
+    values: list[float],
+) -> None:
     # given
-    df = cases()
+    rate_col = READMIT
 
     # when
-    result = surgeon_summary(df, READMIT)
+    result = surgeon_summary(df, rate_col)
 
     # then
     assert list(result.columns) == SUMMARY_COLUMNS
-    assert list(result["surgeon"]) == ["Dr. A", "Dr. B"]
-    assert list(result["cases"]) == [3, 2]
-    assert list(result["gain_n"]) == [2, 2]
-    assert list(result["rate"]) == pytest.approx([1 / 3, 1.0])
-    assert list(result["value"]) == pytest.approx([7.5, 8.0])
+    assert list(result["surgeon"]) == surgeons
+    assert list(result["cases"]) == counts
+    assert list(result["gain_n"]) == gain_counts
+    assert list(result["rate"]) == pytest.approx(rates)
+    assert list(result["value"]) == pytest.approx(values)
 
 
 def test_headline() -> None:
