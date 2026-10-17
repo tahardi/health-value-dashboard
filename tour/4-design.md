@@ -74,7 +74,7 @@ Steps 8 to 11 repeat once per card. Mark them done together once every new card 
      each other card. HVD-7 is the Demo epic.
    - Run `jira.py link <blocker> <blocked>` for every card that must wait on another.
 
-   Open the board with `open https://taylorantoniohardin.atlassian.net/jira/software/projects/HVD/boards` and
+   Open the board with `open https://taylorantoniohardin.atlassian.net/jira/software/projects/HVD/boards/8` and
    say:
 
    > These are your new cards. Open each one and check it against this list:
