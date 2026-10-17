@@ -7,7 +7,11 @@ COPY --from=ghcr.io/astral-sh/uv:0.12.22 /uv /bin/uv
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends g++ \
+    && uv sync --frozen --no-dev --no-install-project \
+    && apt-get purge -y --auto-remove g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY app/ app/
 COPY data/sample.csv /app/data/sample.csv
