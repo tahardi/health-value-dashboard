@@ -132,6 +132,7 @@ Known fixes:
 | Claude usage limit reached | The progress file is already current. Tell her when the limit resets (Claude shows the time), and that she resumes with `colo` in `~/code/health-value-dashboard` and "continue the tour". |
 | `make reference` or a golden test fails | Not blocking. Run `git restore tests/golden`, record it under `## Problems`, draft the text to Taylor, continue. Cards follow "When make reference fails locally" in the repo's `CLAUDE.md`. |
 | `brew: command not found` after installing Homebrew | Add `eval "$(/opt/homebrew/bin/brew shellenv)"` to her shell file (`~/.zshrc` for zsh, `~/.bash_profile` for bash), have her open a new Terminal window, and retry. |
+| A `!` command fails, hangs, or cannot take her password or menu choices | Have her open a separate Terminal window (Cmd+N), type the same command there without the `!`, and come back to this Claude window when it finishes. Then run the step's check again, such as `brew --version` or `gh auth status`. |
 | `/card` stopped partway (Terminal closed, limit hit) | She runs the same `/card KEY` again. If it reports the worktree already exists, she types "continue in the existing worktree". |
 
 ## Parts
