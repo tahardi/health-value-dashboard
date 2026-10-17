@@ -43,3 +43,12 @@ Then open http://localhost:8000. The app keeps its data in `.hvd-data/current.cs
 data survives restarts. Delete `.hvd-data/` to go back to the sample data.
 
 To build and run your local changes instead, use `make docker-build` and `make docker-run-local`.
+
+## Self-guided tour
+
+`TOUR.md` is a step-by-step tour of how this project is built with Claude, from design to a published image.
+To start it, open Terminal, run `mkdir -p ~/code && cd ~/code && claude`, type `/model sonnet`, and paste:
+
+> I'm starting the Health Value Dashboard tour. If ~/code/health-value-dashboard doesn't exist, clone
+> https://github.com/tahardi/health-value-dashboard there. Then read TOUR.md in that folder and guide me through
+> it, starting where .tour-progress.md says I left off, or from the beginning if it doesn't exist.
