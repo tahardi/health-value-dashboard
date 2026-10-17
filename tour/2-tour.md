@@ -65,14 +65,12 @@ Before step 1, say:
      today.
    - "Blocked by" means a card cannot start until another card is done.
 
-4. **Jira backlog.** Run `open https://taylorantoniohardin.atlassian.net/jira/software/projects/HVD/boards/8/backlog`.
-   If Jira asks her to log in, she uses the email her Jira invitation went to. Then say:
+4. **Jira backlog.** Run
+   `open "https://taylorantoniohardin.atlassian.net/jira/software/projects/HVD/boards/8/backlog?epics=visible"`.
+   The `?epics=visible` at the end turns on the epics panel, which Jira hides by default. If Jira asks her to log
+   in, she uses the email her Jira invitation went to.
 
-   > Jira hides epics by default. Click the "View settings" icon near the top right, then turn on "Epics".
-
-   If she cannot find it, ask her what she sees and guide her from her description.
-
-   Explain what she now sees:
+   Explain what she sees:
 
    - The sprint at the top: a two-week box of work the team has committed to finishing.
    - The backlog below it: every other card, waiting to be picked.
