@@ -1,6 +1,6 @@
-# The tour files are instructions Claude follows, so a stale reference sends the learner to a command or
-# file that no longer exists. These tests do not judge the writing. They pull the references out of the
-# markdown and check each one against the repo:
+# The tour files are instructions Claude follows, so a stale reference sends the learner to a
+# command or file that no longer exists. These tests do not judge the writing. They pull the
+# references out of the markdown and check each one against the repo:
 # - test_make_targets: every `make <target>` in the tour names a target defined in the Makefile.
 # - test_links: every relative markdown link points to a file that exists.
 # - test_parts: TOUR.md links all four part files.
