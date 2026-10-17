@@ -23,7 +23,7 @@ A demo Shiny for Python dashboard for surgical value metrics. It uses made-up da
 - `make format`: format and auto-fix with ruff.
 - `make lint`: check formatting and lint with ruff.
 - `make test`: run pytest.
-- `make pre-pr`: format, lint, and test. Run before every PR.
+- `make pre-pr` (the default target): install, regenerate the data and R golden files, format, lint, test, and build the image. Run before every PR.
 - `make data`: regenerate `data/sample.csv`.
 - `make reference`: rerun the R reference in Docker and rewrite `tests/golden/`.
 - `make run`: serve the app at http://localhost:8000 with reload.

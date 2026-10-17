@@ -1,12 +1,11 @@
 IMAGE = ghcr.io/tahardi/health-value-dashboard
 IMAGE_LABEL = org.opencontainers.image.source=https://github.com/tahardi/health-value-dashboard
 
-.PHONY: \
+.PHONY: pre-pr \
 	install \
 	format \
 	lint \
 	test \
-	pre-pr \
 	run \
 	data \
 	reference \
@@ -15,6 +14,8 @@ IMAGE_LABEL = org.opencontainers.image.source=https://github.com/tahardi/health-
 	docker-run \
 	docker-clean \
 	docker-prune
+
+pre-pr: install data reference format lint test docker-build
 
 install:
 	uv sync
@@ -29,8 +30,6 @@ lint:
 
 test:
 	uv run pytest
-
-pre-pr: format lint test
 
 run:
 	uv run shiny run \
