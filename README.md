@@ -12,14 +12,14 @@ Then open http://localhost:8000.
 
 ## Run with Docker
 
-Every merge to `main` publishes a new image to the GitHub container registry. `make docker-run` pulls and runs the
-newest one, no login needed.
+Every merge to `main` publishes a new image to the GitHub container registry. `make docker-run-registry` pulls and
+runs the newest one, no login needed.
 
 ```sh
-make docker-run
+make docker-run-registry
 ```
 
 Then open http://localhost:8000. The app keeps its data in `.hvd-data/current.csv` in this folder, so uploaded
 data survives restarts. Delete `.hvd-data/` to go back to the sample data.
 
-To build and run your local changes instead, use `make docker-build` and `make docker-run-dev`.
+To build and run your local changes instead, use `make docker-build` and `make docker-run-local`.
