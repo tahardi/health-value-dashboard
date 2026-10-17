@@ -55,6 +55,12 @@ breaks").
   the `!` prefix, for example `! gh auth login`. Tell her why: the `!` runs the command directly so she can type
   the password or finish the login, and the output still lands in the chat.
 - Open web pages for her with `open <url>`.
+- Jira links in the part files use board number 8 (`.../projects/HVD/boards/8`). Once her Jira token works, look
+  up the real number with the command below, and use it in place of 8 in every board or backlog link:
+
+  ```sh
+  python3 -c "import os, sys; sys.path.insert(0, os.path.expanduser('~/.claude/skills/card/scripts')); import jira; print(jira.api('GET', '/rest/agile/1.0/board?projectKeyOrId=HVD')['values'][0]['id'])"
+  ```
 - Before any `make` or `/card` step, run `pwd`. If it is not `~/code/health-value-dashboard`, give her the command
   `cd ~/code/health-value-dashboard` first.
 - Run `make run`, `make docker-run-local`, and `make docker-run-registry` in the background, then open
