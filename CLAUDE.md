@@ -7,6 +7,9 @@ A demo Shiny for Python dashboard for surgical value metrics. It uses made-up da
 - `app/app.py`: the Shiny app object, UI, and server.
 - `app/schema.py`: the column list and column name constants.
 - `app/data.py`: loads and checks a CSV of cases.
+- `app/store.py`: finds the data file and reloads it, keeping the last good copy.
+- `app/filters.py`: applies the filter bar selections to the cases.
+- `app/value_tab.py`, `app/data_tab.py`: the Value and Data tabs.
 - `scripts/generate_data.py`: generates the made-up `data/sample.csv`.
 - `data/sample.csv`: the sample data set used by the app and tests.
 - `tests/`: pytest tests, one `test_<module>.py` per module.
