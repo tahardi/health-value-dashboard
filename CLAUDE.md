@@ -10,6 +10,8 @@ A demo Shiny for Python dashboard for surgical value metrics. It uses made-up da
 - `app/stats.py`: means with 95% confidence intervals, headline numbers, and the per-surgeon summary.
 - `app/store.py`: finds the data file and reloads it, keeping the last good copy.
 - `app/filters.py`: applies the filter bar selections to the cases.
+- `app/charts.py`: the cost versus function gain value map.
+- `app/tables.py`: formats the per-surgeon summary for display.
 - `app/value_tab.py`, `app/data_tab.py`: the Value and Data tabs.
 - `scripts/generate_data.py`: generates the made-up `data/sample.csv`.
 - `data/sample.csv`: the sample data set used by the app and tests.
