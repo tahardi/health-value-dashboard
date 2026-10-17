@@ -27,6 +27,9 @@ A demo Shiny for Python dashboard for surgical value metrics. It uses made-up da
 - `make data`: regenerate `data/sample.csv`.
 - `make reference`: rerun the R reference in Docker and rewrite `tests/golden/`.
 - `make run`: serve the app at http://localhost:8000 with reload.
+- `make docker-build`: build the image as `health-value-dashboard:dev`.
+- `make docker-run-dev`: run `health-value-dashboard:dev` at http://localhost:8000, data in `.hvd-data/`.
+- `make docker-run`: pull and run `ghcr.io/tahardi/health-value-dashboard:latest` the same way.
 
 ## Rules
 
