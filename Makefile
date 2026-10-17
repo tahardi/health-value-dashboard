@@ -18,7 +18,7 @@ pre-pr: format lint test
 
 run:
 	uv run shiny run \
-		app/app.py \
+		app.app:app \
 		--reload \
 		--port 8000
 
