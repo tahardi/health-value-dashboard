@@ -28,7 +28,7 @@ If rules 1 and 2 conflict, stop and ask the user.
    Otherwise run `jira.py strike-blockers KEY` to strike through the finished blockers in the card's description.
 3. **Start.** Run `jira.py assign KEY` (assigns the card to the user unless already assigned to them), then
    `jira.py transition KEY "In Progress"`.
-4. **Create a worktree.** From the repo root, run `git fetch origin`, then `git worktree add .claude/worktrees/<branch> -b <branch> origin/main`, where `<branch>` is `<key-lowercase>-<short-description>`. Make sure `.claude/worktrees/` is in `.gitignore`. Work only inside the worktree. Never commit to `main`.
+4. **Create a worktree.** The worktree path is the location the user's CLAUDE.md names for worktrees. If it names none, use `.claude/worktrees/<branch>` and make sure `.claude/worktrees/` is in `.gitignore`. `<branch>` is `<key-lowercase>-<short-description>`. From the repo root, run `git fetch origin`, then `git worktree add <worktree path> -b <branch> origin/main`. Work only inside the worktree. Never commit to `main`.
 5. **Check tools.** Run the version commands for the tools the card needs, such as `uv --version` or `R --version`. If a tool is missing or older than the card requires, stop and ask.
 6. **Implement the steps in order.**
    - For each test step, write the test, run it, and see it fail for the expected reason before you implement.
@@ -61,11 +61,12 @@ If rules 1 and 2 conflict, stop and ask the user.
 ## Review Round
 
 Run this when `/card KEY` is run on a card that is `In Review`, and once at the end of step 14. Work in the card's
-existing worktree. If it is gone, recreate it from the PR branch with `git worktree add .claude/worktrees/<branch> <branch>`.
+existing worktree, at the worktree path from step 4. If it is gone, recreate it from the PR branch with
+`git worktree add <worktree path> <branch>`.
 
 1. **Check for a merge on GitHub.** If `gh pr view <number> --json state` is `MERGED`, the user clicked Merge on
    GitHub. Skip to cleanup:
-   - Remove the worktree: run `git worktree remove .claude/worktrees/<branch>` from the main repo checkout. If it has
+   - Remove the worktree: run `git worktree remove <worktree path>` from the main repo checkout. If it has
      uncommitted changes, stop and tell the user. Never pass `--force`.
    - Delete the local and remote branch if they still exist: `git branch -D <branch>` and
      `git push origin --delete <branch>`.
@@ -99,7 +100,7 @@ existing worktree. If it is gone, recreate it from the PR branch with `git workt
      resolve conflicts, the code changed after approval: report it to the user and stop.
    - Every check in `gh pr checks <number>` must pass, and `mergeable` must be `MERGEABLE`. If not, tell the user what
      blocks the merge, and stop.
-   - Remove the worktree: run `git worktree remove .claude/worktrees/<branch>` from the main repo checkout. If it has
+   - Remove the worktree: run `git worktree remove <worktree path>` from the main repo checkout. If it has
      uncommitted changes, stop and tell the user. Never pass `--force`.
    - Run `gh repo view --json squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed`. From the main repo checkout,
      run `gh pr merge <number> --delete-branch` with `--squash` if allowed, else `--merge`, else `--rebase`. This
