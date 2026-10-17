@@ -9,3 +9,14 @@ make run
 ```
 
 Then open http://localhost:8000.
+
+## Run with Docker
+
+```sh
+make docker-run
+```
+
+Then open http://localhost:8000. The app keeps its data in `.hvd-data/current.csv` in this folder, so uploaded
+data survives restarts. Delete `.hvd-data/` to go back to the sample data.
+
+To build and run your local changes instead, use `make docker-build` and `make docker-run-dev`.

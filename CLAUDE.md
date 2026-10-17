@@ -25,10 +25,15 @@ A demo Shiny for Python dashboard for surgical value metrics. It uses made-up da
 - `make format`: format and auto-fix with ruff.
 - `make lint`: check formatting and lint with ruff.
 - `make test`: run pytest.
-- `make pre-pr`: format, lint, and test. Run before every PR.
+- `make pre-pr` (the default target): install, regenerate the data and R golden files, format, lint, test, and build the image. Run before every PR.
 - `make data`: regenerate `data/sample.csv`.
 - `make reference`: rerun the R reference in Docker and rewrite `tests/golden/`.
 - `make run`: serve the app at http://localhost:8000 with reload.
+- `make docker-build`: build the image as `health-value-dashboard:dev`.
+- `make docker-run-dev`: run `health-value-dashboard:dev` at http://localhost:8000, data in `.hvd-data/`.
+- `make docker-run`: pull and run `ghcr.io/tahardi/health-value-dashboard:latest` the same way.
+- `make docker-clean`: remove every local image of this app.
+- `make docker-prune`: remove old untagged images of this app, keeping the current `:dev` and `:latest`.
 
 ## Rules
 

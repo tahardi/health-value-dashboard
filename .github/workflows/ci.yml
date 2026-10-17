@@ -18,3 +18,11 @@ jobs:
       - run: uv sync --frozen
       - run: make lint
       - run: make test
+
+  docker:
+    name: docker
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v7
+      - run: make docker-build
