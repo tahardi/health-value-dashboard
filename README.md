@@ -10,6 +10,24 @@ make run
 
 Then open http://localhost:8000.
 
+## What it looks like
+
+The Value tab shows headline numbers, a cost versus function gain value map, and a per-surgeon table.
+
+![Value tab](docs/screenshots/value.png)
+
+The filter bar narrows every number, the map, and the table. The rate measure picks which rate the table and
+the last headline box show. Here the cases are filtered to total knee replacements, and the rate is complications.
+
+![Value tab filtered to total knee replacements](docs/screenshots/filtered.png)
+
+The Data tab shows the current file, lets you upload a replacement CSV, and lists the expected columns.
+
+![Data tab](docs/screenshots/data.png)
+
+To refresh these images, run `make screenshots`. The first time, install the browser with
+`uv run playwright install chromium`.
+
 ## Run with Docker
 
 Every merge to `main` publishes a new image to the GitHub container registry. `make docker-run-registry` pulls and
