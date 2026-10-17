@@ -1,3 +1,4 @@
+import argparse
 import base64
 import functools
 import json
@@ -8,13 +9,30 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-USAGE = """usage:
+USAGE = """
   python3 jira.py get KEY                 print card as markdown with status, parent, links
   python3 jira.py transition KEY STATUS   move card (e.g. "In Progress", "In Review")
   python3 jira.py comment KEY TEXT        add a plain-text comment (URLs become links)
   python3 jira.py assign KEY              assign to the token's user unless already theirs
   python3 jira.py strike-blockers KEY     strike Done blockers in the "Blocked by" line
+  python3 jira.py create PROJECT SUMMARY --description-file PATH
+                  [--parent KEY] [--points N] [--labels a,b]
+                                          create a Task from a markdown file
+  python3 jira.py edit KEY [--summary S] [--description-file PATH] [--points N] [--labels a,b]
+                                          change only the given fields; --labels replaces all
+  python3 jira.py link BLOCKER BLOCKED    mark BLOCKER as blocking BLOCKED
+  python3 jira.py sprint KEY [KEY...]     add cards to the active sprint of the first card's board
 """
+
+INLINE = re.compile(
+    r"`(?P<code>[^`]+)`"
+    r"|\*\*(?P<strong>.+?)\*\*"
+    r"|~~(?P<strike>.+?)~~"
+    r"|\[(?P<label>[^\]]+)\]\((?P<href>https?://[^)\s]+)\)"
+    r"|(?P<url>https?://\S+)"
+)
+HEADING = re.compile(r"(#{1,4}) (.*)")
+LIST_ITEM = re.compile(r"( *)([-*]|\d+\.) (.*)")
 
 
 @functools.cache
@@ -48,6 +66,104 @@ def api(method: str, path: str, body: Any = None) -> Any:
             return json.loads(data) if data else None
     except urllib.error.HTTPError as e:
         sys.exit(f"jira {method} {path} failed: {e.code} {e.read().decode()[:500]}")
+
+
+def inline_nodes(text: str) -> list[dict[str, Any]]:
+    nodes: list[dict[str, Any]] = []
+    pos = 0
+    for m in INLINE.finditer(text):
+        if m.start() > pos:
+            nodes.append({"type": "text", "text": text[pos : m.start()]})
+        if m["code"]:
+            nodes.append({"type": "text", "text": m["code"], "marks": [{"type": "code"}]})
+        elif m["strong"]:
+            nodes.append({"type": "text", "text": m["strong"], "marks": [{"type": "strong"}]})
+        elif m["strike"]:
+            nodes.append({"type": "text", "text": m["strike"], "marks": [{"type": "strike"}]})
+        else:
+            href = m["href"] or m["url"]
+            link = {"type": "link", "attrs": {"href": href}}
+            nodes.append({"type": "text", "text": m["label"] or href, "marks": [link]})
+        pos = m.end()
+    if pos < len(text):
+        nodes.append({"type": "text", "text": text[pos:]})
+    return nodes
+
+
+def list_node(items: list[tuple[int, bool, str]], start: int) -> tuple[dict[str, Any], int]:
+    indent, ordered, _ = items[start]
+    entries: list[dict[str, Any]] = []
+    i = start
+    while i < len(items) and items[i][0] >= indent:
+        depth, kind, text = items[i]
+        if depth > indent:
+            nested, i = list_node(items, i)
+            entries[-1]["content"].append(nested)
+            continue
+        if kind != ordered:
+            break
+        paragraph = {"type": "paragraph", "content": inline_nodes(text)}
+        entries.append({"type": "listItem", "content": [paragraph]})
+        i += 1
+    return {"type": "orderedList" if ordered else "bulletList", "content": entries}, i
+
+
+def markdown_to_adf(text: str) -> dict[str, Any]:
+    lines = text.splitlines()
+    content: list[dict[str, Any]] = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if not line.strip():
+            i += 1
+        elif line.lstrip().startswith("```"):
+            language = line.lstrip()[3:].strip()
+            i += 1
+            code = []
+            while i < len(lines) and not lines[i].lstrip().startswith("```"):
+                code.append(lines[i])
+                i += 1
+            i += 1
+            block: dict[str, Any] = {"type": "codeBlock"}
+            if language:
+                block["attrs"] = {"language": language}
+            if code:
+                block["content"] = [{"type": "text", "text": "\n".join(code)}]
+            content.append(block)
+        elif m := HEADING.fullmatch(line):
+            level = len(m[1])
+            heading = {"type": "heading", "attrs": {"level": level}, "content": inline_nodes(m[2])}
+            content.append(heading)
+            i += 1
+        elif LIST_ITEM.fullmatch(line):
+            items: list[tuple[int, bool, str]] = []
+            while i < len(lines) and lines[i].strip():
+                m = LIST_ITEM.fullmatch(lines[i])
+                if m:
+                    items.append((len(m[1]), m[2][0].isdigit(), m[3]))
+                elif lines[i].startswith(" ") and items:
+                    depth, kind, prior = items[-1]
+                    items[-1] = (depth, kind, prior + " " + lines[i].strip())
+                else:
+                    break
+                i += 1
+            start = 0
+            while start < len(items):
+                node, start = list_node(items, start)
+                content.append(node)
+        else:
+            words = []
+            while i < len(lines) and lines[i].strip():
+                if words and (
+                    HEADING.fullmatch(lines[i])
+                    or LIST_ITEM.fullmatch(lines[i])
+                    or lines[i].lstrip().startswith("```")
+                ):
+                    break
+                words.append(lines[i].strip())
+                i += 1
+            content.append({"type": "paragraph", "content": inline_nodes(" ".join(words))})
+    return {"type": "doc", "version": 1, "content": content}
 
 
 def text_of(node: dict[str, Any]) -> str:
@@ -89,8 +205,18 @@ def render(node: dict[str, Any], indent: str = "") -> str:
     return indent + text_of(node)
 
 
+@functools.cache
+def story_points_field() -> str:
+    fields = {f["name"]: f["id"] for f in api("GET", "/rest/api/3/field")}
+    for name in ("Story point estimate", "Story Points"):
+        if name in fields:
+            return fields[name]
+    sys.exit("no story points field on this Jira site")
+
+
 def get(key: str) -> None:
-    fields = "summary,status,description,parent,labels,issuelinks,customfield_10016,assignee"
+    points = story_points_field()
+    fields = f"summary,status,description,parent,labels,issuelinks,{points},assignee"
     issue = api("GET", f"/rest/api/3/issue/{key}?fields={fields}")
     f = issue["fields"]
     print(f"# {key}: {f['summary']}")
@@ -99,7 +225,7 @@ def get(key: str) -> None:
         print(f"Epic: {f['parent']['key']} {f['parent']['fields']['summary']}")
     print(f"Assignee: {(f.get('assignee') or {}).get('displayName', 'unassigned')}")
     print(f"Labels: {', '.join(f.get('labels') or []) or 'none'}")
-    print(f"Points: {f.get('customfield_10016')}")
+    print(f"Points: {f.get(points)}")
     blocked_by, blocks = [], []
     for link in f.get("issuelinks") or []:
         if link["type"]["name"] != "Blocks":
@@ -198,23 +324,162 @@ def strike_blockers(key: str) -> None:
     print(f"struck through {', '.join(done)} in {key}")
 
 
+def card_fields(
+    summary: str | None,
+    description_file: str | None,
+    points: float | None,
+    labels: list[str] | None,
+) -> dict[str, Any]:
+    fields: dict[str, Any] = {}
+    if summary is not None:
+        fields["summary"] = summary
+    if description_file is not None:
+        with open(description_file) as f:
+            fields["description"] = markdown_to_adf(f.read())
+    if points is not None:
+        fields[story_points_field()] = points
+    if labels is not None:
+        fields["labels"] = labels
+    return fields
+
+
+def create(
+    project: str,
+    summary: str,
+    description_file: str,
+    parent: str | None = None,
+    points: float | None = None,
+    labels: list[str] | None = None,
+) -> None:
+    fields = card_fields(summary, description_file, points, labels)
+    fields["project"] = {"key": project}
+    fields["issuetype"] = {"name": "Task"}
+    if parent is not None:
+        fields["parent"] = {"key": parent}
+    key = api("POST", "/rest/api/3/issue", {"fields": fields})["key"]
+    print(f"created {key}")
+    print(f"{load_env()['JIRA_SITE']}/browse/{key}")
+
+
+def edit(
+    key: str,
+    summary: str | None = None,
+    description_file: str | None = None,
+    points: float | None = None,
+    labels: list[str] | None = None,
+) -> None:
+    fields = card_fields(summary, description_file, points, labels)
+    if not fields:
+        sys.exit(
+            "nothing to edit; pass at least one of --summary, --description-file, "
+            "--points, --labels"
+        )
+    api("PUT", f"/rest/api/3/issue/{key}", {"fields": fields})
+    print(f"edited {key}: {', '.join(fields)}")
+
+
+def link(blocker: str, blocked: str) -> None:
+    body = {
+        "type": {"name": "Blocks"},
+        "inwardIssue": {"key": blocker},
+        "outwardIssue": {"key": blocked},
+    }
+    api("POST", "/rest/api/3/issueLink", body)
+    print(f"{blocker} blocks {blocked}")
+
+
+def sprint(keys: list[str]) -> None:
+    project = keys[0].split("-")[0]
+    boards = api("GET", f"/rest/agile/1.0/board?projectKeyOrId={project}")["values"]
+    if not boards:
+        sys.exit(f"no board for project {project}")
+    board = boards[0]
+    active = api("GET", f"/rest/agile/1.0/board/{board['id']}/sprint?state=active")["values"]
+    if not active:
+        sys.exit(f"no active sprint on board {board['name']}")
+    api("POST", f"/rest/agile/1.0/sprint/{active[0]['id']}/issue", {"issues": keys})
+    print(f"added {', '.join(keys)} to {active[0]['name']}")
+
+
+def issue_key(text: str) -> str:
+    if not re.fullmatch(r"[A-Z][A-Z0-9]+-\d+", text):
+        raise argparse.ArgumentTypeError(f"not a card key: {text}")
+    return text
+
+
+def label_list(text: str) -> list[str]:
+    return [label for label in text.split(",") if label]
+
+
 def main() -> None:
-    args = sys.argv[1:]
-    if len(args) < 2 or not re.fullmatch(r"[A-Z][A-Z0-9]+-\d+", args[1]):
-        sys.exit(USAGE)
-    cmd, key = args[0], args[1]
-    if cmd == "get" and len(args) == 2:
-        get(key)
-    elif cmd == "transition" and len(args) == 3:
-        transition(key, args[2])
-    elif cmd == "assign" and len(args) == 2:
-        assign(key)
-    elif cmd == "strike-blockers" and len(args) == 2:
-        strike_blockers(key)
-    elif cmd == "comment" and len(args) == 3:
-        comment(key, args[2])
-    else:
-        sys.exit(USAGE)
+    parser = argparse.ArgumentParser(prog="jira.py", usage=USAGE)
+    commands = parser.add_subparsers(dest="command", required=True, prog="jira.py")
+
+    for name in ("get", "assign", "strike-blockers"):
+        commands.add_parser(name).add_argument("key", type=issue_key)
+
+    p = commands.add_parser("transition")
+    p.add_argument("key", type=issue_key)
+    p.add_argument("status")
+
+    p = commands.add_parser("comment")
+    p.add_argument("key", type=issue_key)
+    p.add_argument("text")
+
+    p = commands.add_parser("create")
+    p.add_argument("project")
+    p.add_argument("summary")
+    p.add_argument("--description-file", required=True)
+    p.add_argument("--parent", type=issue_key)
+    p.add_argument("--points", type=float)
+    p.add_argument("--labels", type=label_list)
+
+    p = commands.add_parser("edit")
+    p.add_argument("key", type=issue_key)
+    p.add_argument("--summary")
+    p.add_argument("--description-file")
+    p.add_argument("--points", type=float)
+    p.add_argument("--labels", type=label_list)
+
+    p = commands.add_parser("link")
+    p.add_argument("blocker", type=issue_key)
+    p.add_argument("blocked", type=issue_key)
+
+    p = commands.add_parser("sprint")
+    p.add_argument("keys", type=issue_key, nargs="+")
+
+    args = parser.parse_args()
+    if args.command == "get":
+        get(args.key)
+    elif args.command == "transition":
+        transition(args.key, args.status)
+    elif args.command == "comment":
+        comment(args.key, args.text)
+    elif args.command == "assign":
+        assign(args.key)
+    elif args.command == "strike-blockers":
+        strike_blockers(args.key)
+    elif args.command == "create":
+        create(
+            args.project,
+            args.summary,
+            args.description_file,
+            parent=args.parent,
+            points=args.points,
+            labels=args.labels,
+        )
+    elif args.command == "edit":
+        edit(
+            args.key,
+            summary=args.summary,
+            description_file=args.description_file,
+            points=args.points,
+            labels=args.labels,
+        )
+    elif args.command == "link":
+        link(args.blocker, args.blocked)
+    elif args.command == "sprint":
+        sprint(args.keys)
 
 
 if __name__ == "__main__":
