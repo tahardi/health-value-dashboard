@@ -238,11 +238,12 @@ porting any statistic: write or reuse R code you trust, and the Python must matc
 
 ## Starter Kit
 
-The kit lives in `starter-kit/` and the tour installs it into `~/.claude/`. It holds the `/card` command
-(`skills/card/SKILL.md`) and its Jira helper (`skills/card/scripts/jira.py`), kept general and Python/R flavored:
+The kit lives in `starter-kit/` and the tour installs it into `~/.claude/`. It holds a global `CLAUDE.md`,
+`settings.json`, and `statusline.sh`, plus the `/card` command (`skills/card/SKILL.md`) and its Jira helper
+(`skills/card/scripts/jira.py`), kept general and Python/R flavored:
 
-- `/card KEY` reads the card, checks its blockers, assigns it, moves it to In Progress, works in its own worktree under
-  `.claude/worktrees/`, writes tests first, runs `make pre-pr`, opens the PR, and watches CI.
+- `/card KEY` reads the card, checks its blockers, assigns it, moves it to In Progress, works in its own worktree at
+  the location the global `CLAUDE.md` names, writes tests first, runs `make pre-pr`, opens the PR, and watches CI.
 - Steps that depend on a CI run happen after CI passes.
 - The Review Round reads the PR comments, fixes them, replies with `**Claude:**`, resolves threads, and merges after
   the user's approval comment. It then cleans up the worktree and branches and moves the card to Done.

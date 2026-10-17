@@ -35,7 +35,7 @@ For the cards built first:
 5. Open the PR titled `[HVD-N] Card Title`, fill in the PR template, link the card.
 
 The example cards (T-X1, T-X2) are left for the learner, who runs them with the starter kit's `/card`. That `/card`
-creates its own worktree under `.claude/worktrees/`.
+creates its own worktree at the location the starter kit's `CLAUDE.md` names.
 
 ## Global Constraints
 
