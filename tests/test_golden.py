@@ -5,13 +5,16 @@ import pandas as pd
 import pytest
 
 from app.data import load
-from app.stats import headline, surgeon_summary
+from app.stats import funnel, headline, quarterly, surgeon_summary
+from scripts.generate_data import READMIT_OUTLIER
 
 ROOT = Path(__file__).resolve().parent.parent
 GOLDEN = sorted((ROOT / "tests" / "golden").glob("*.csv"))
 STATISTICS = {
     "headline_": lambda df, rate_col: pd.DataFrame([headline(df, rate_col)]),
     "surgeon_summary_": surgeon_summary,
+    "funnel_": funnel,
+    "quarterly_": lambda df, rate_col: quarterly(df, rate_col, READMIT_OUTLIER),
 }
 
 
@@ -25,7 +28,7 @@ def compute(stem: str) -> pd.DataFrame:
 @pytest.mark.parametrize("path", GOLDEN, ids=[p.stem for p in GOLDEN])
 def test_golden(path: Path) -> None:
     # given
-    expected = pd.read_csv(path)
+    expected = pd.read_csv(path, keep_default_na=False, na_values=["NA"])
 
     # when
     actual = compute(path.stem)
