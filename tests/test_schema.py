@@ -38,6 +38,7 @@ def test_filters() -> None:
                 "implant_cost",
                 "complication",
                 "readmit_30d",
+                "discharged_home",
                 "function_pre",
                 "function_post",
             ],
@@ -54,7 +55,11 @@ def test_filters() -> None:
             ],
             id="number",
         ),
-        pytest.param(Kind.BOOLEAN, ["complication", "readmit_30d"], id="boolean"),
+        pytest.param(
+            Kind.BOOLEAN,
+            ["complication", "readmit_30d", "discharged_home"],
+            id="boolean",
+        ),
         pytest.param(Kind.CATEGORY, [], id="category"),
     ],
 )
@@ -71,7 +76,7 @@ def test_measures(kind: Kind | None, expected: list[str]) -> None:
 
 def test_rate_measures() -> None:
     # given
-    expected = ["complication", "readmit_30d"]
+    expected = ["complication", "readmit_30d", "discharged_home"]
 
     # when
     names = [c.name for c in rate_measures()]
