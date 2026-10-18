@@ -1,11 +1,26 @@
 import math
 
+import numpy as np
 import pandas as pd
 from scipy import stats
 
-from app.schema import COST, GAIN, SURGEON
+from app.schema import COST, GAIN, SURGEON, SURGERY_DATE
 
 NAN = math.nan
+Z95 = 1.959964
+Z998 = 3.090232
+FUNNEL_COLUMNS = (
+    SURGEON,
+    "n",
+    "events",
+    "rate",
+    "p0",
+    "low95",
+    "high95",
+    "low998",
+    "high998",
+    "flag",
+)
 SUMMARY_COLUMNS = (
     SURGEON,
     "cases",
@@ -73,3 +88,41 @@ def _surgeon_row(surgeon: str, group: pd.DataFrame, rate_col: str) -> dict[str, 
 def _rate(values: pd.Series) -> tuple[int, float]:
     clean = values.dropna().astype("float64")
     return len(clean), float(clean.mean()) if len(clean) else NAN
+
+
+def limits(p0: float, n: np.ndarray | pd.Series, z: float) -> tuple[np.ndarray, np.ndarray]:
+    margin = z * np.sqrt(p0 * (1 - p0) / np.asarray(n, dtype="float64"))
+    return np.clip(p0 - margin, 0.0, 1.0), np.clip(p0 + margin, 0.0, 1.0)
+
+
+def funnel(df: pd.DataFrame, rate_col: str) -> pd.DataFrame:
+    clean = df.dropna(subset=[rate_col])
+    outcome = clean[rate_col].astype("float64")
+    counts = outcome.groupby(clean[SURGEON]).agg(n="count", events="sum")
+    table = counts.reset_index().sort_values(SURGEON, ignore_index=True)
+    if table.empty:
+        return pd.DataFrame(columns=FUNNEL_COLUMNS)
+    table["rate"] = table["events"] / table["n"]
+    table["p0"] = outcome.mean()
+    table["low95"], table["high95"] = limits(table["p0"].iloc[0], table["n"], Z95)
+    table["low998"], table["high998"] = limits(table["p0"].iloc[0], table["n"], Z998)
+    table["flag"] = np.select(
+        [table["rate"] > table["high998"], table["rate"] < table["low998"]],
+        ["high", "low"],
+        default="",
+    )
+    return table[list(FUNNEL_COLUMNS)]
+
+
+def quarterly(df: pd.DataFrame, rate_col: str, surgeon: str) -> pd.DataFrame:
+    clean = df.dropna(subset=[rate_col])
+    outcome = clean[rate_col].astype("float64")
+    quarter = clean[SURGERY_DATE].dt.to_period("Q").astype(str)
+    mine = clean[SURGEON] == surgeon
+    result = pd.DataFrame(
+        {
+            "surgeon_rate": outcome[mine].groupby(quarter[mine]).mean(),
+            "others_rate": outcome[~mine].groupby(quarter[~mine]).mean(),
+        }
+    ).reindex(sorted(quarter.unique()))
+    return result.rename_axis("quarter").reset_index()

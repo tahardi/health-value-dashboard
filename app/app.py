@@ -7,6 +7,7 @@ from app.data_tab import data_server, data_ui
 from app.filters import apply_filters
 from app.schema import SURGERY_DATE, Column, filters
 from app.store import data_path, ensure_data, reload, sample_path
+from app.surgeons_tab import surgeons_server, surgeons_ui
 from app.value_tab import value_server, value_ui
 
 ensure_data(data_path(), sample_path())
@@ -41,6 +42,7 @@ def filter_bar(frame: pd.DataFrame | None) -> ui.Tag:
 
 app_ui = ui.page_navbar(
     ui.nav_panel("Value", value_ui("value")),
+    ui.nav_panel("Surgeons", surgeons_ui("surgeons")),
     ui.nav_panel("Data", data_ui("data")),
     title="Health Value Dashboard",
     header=filter_bar(last_good["frame"]),
@@ -71,6 +73,7 @@ def server(input: Inputs, output: Outputs, session: Session) -> None:
         return apply_filters(frame, selections, start, end)
 
     value_server("value", filtered)
+    surgeons_server("surgeons", filtered)
     data_server("data", state, data_path())
 
 
