@@ -64,6 +64,13 @@ COLUMNS: tuple[Column, ...] = (
         higher_is_better=False,
     ),
     Column(
+        "discharged_home",
+        "Discharged home",
+        Kind.BOOLEAN,
+        Role.MEASURE,
+        higher_is_better=True,
+    ),
+    Column(
         FUNCTION_PRE,
         "Function score before",
         Kind.NUMBER,

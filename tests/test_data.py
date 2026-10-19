@@ -23,6 +23,7 @@ VALID_ROW = {
     "implant_cost": "5200",
     "complication": "no",
     "readmit_30d": "yes",
+    "discharged_home": "yes",
     "function_pre": "40",
     "function_post": "72",
 }
@@ -66,6 +67,7 @@ def valid_frame(**changes: object) -> pd.DataFrame:
         "implant_cost": 5200.0,
         "complication": False,
         "readmit_30d": True,
+        "discharged_home": True,
         "function_pre": 40.0,
         "function_post": 72.0,
         "function_gain": 32.0,
@@ -82,6 +84,7 @@ def valid_frame(**changes: object) -> pd.DataFrame:
             "implant_cost": "float64",
             "complication": "boolean",
             "readmit_30d": "boolean",
+            "discharged_home": "boolean",
             "function_pre": "float64",
             "function_post": "float64",
             "function_gain": "float64",

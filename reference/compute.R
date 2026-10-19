@@ -14,7 +14,7 @@
 
 cases <- read.csv("data/sample.csv", stringsAsFactors = FALSE, na.strings = "")
 cases$function_gain <- cases$function_post - cases$function_pre
-rate_measures <- c("complication", "readmit_30d")
+rate_measures <- c("complication", "readmit_30d", "discharged_home")
 readmit_outlier <- "Dr. Smith"
 
 mean_ci <- function(values) {
