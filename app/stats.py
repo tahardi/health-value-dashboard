@@ -9,18 +9,6 @@ from app.schema import COST, GAIN, SURGEON, SURGERY_DATE
 NAN = math.nan
 Z95 = 1.959964
 Z998 = 3.090232
-FUNNEL_COLUMNS = (
-    SURGEON,
-    "n",
-    "events",
-    "rate",
-    "p0",
-    "low95",
-    "high95",
-    "low998",
-    "high998",
-    "flag",
-)
 SUMMARY_COLUMNS = (
     SURGEON,
     "cases",
@@ -95,13 +83,17 @@ def limits(p0: float, n: np.ndarray | pd.Series, z: float) -> tuple[np.ndarray, 
     return np.clip(p0 - margin, 0.0, 1.0), np.clip(p0 + margin, 0.0, 1.0)
 
 
-def funnel(df: pd.DataFrame, rate_col: str) -> pd.DataFrame:
+def funnel_columns(group_col: str) -> tuple[str, ...]:
+    return (group_col, "n", "events", "rate", "p0", "low95", "high95", "low998", "high998", "flag")
+
+
+def funnel(df: pd.DataFrame, rate_col: str, group_col: str = SURGEON) -> pd.DataFrame:
     clean = df.dropna(subset=[rate_col])
     outcome = clean[rate_col].astype("float64")
-    counts = outcome.groupby(clean[SURGEON]).agg(n="count", events="sum")
-    table = counts.reset_index().sort_values(SURGEON, ignore_index=True)
+    counts = outcome.groupby(clean[group_col]).agg(n="count", events="sum")
+    table = counts.reset_index().sort_values(group_col, ignore_index=True)
     if table.empty:
-        return pd.DataFrame(columns=FUNNEL_COLUMNS)
+        return pd.DataFrame(columns=funnel_columns(group_col))
     table["rate"] = table["events"] / table["n"]
     table["p0"] = outcome.mean()
     table["low95"], table["high95"] = limits(table["p0"].iloc[0], table["n"], Z95)
@@ -111,17 +103,22 @@ def funnel(df: pd.DataFrame, rate_col: str) -> pd.DataFrame:
         ["high", "low"],
         default="",
     )
-    return table[list(FUNNEL_COLUMNS)]
+    return table[list(funnel_columns(group_col))]
 
 
-def quarterly(df: pd.DataFrame, rate_col: str, surgeon: str) -> pd.DataFrame:
+def quarterly(
+    df: pd.DataFrame,
+    rate_col: str,
+    value: str,
+    group_col: str = SURGEON,
+) -> pd.DataFrame:
     clean = df.dropna(subset=[rate_col])
     outcome = clean[rate_col].astype("float64")
     quarter = clean[SURGERY_DATE].dt.to_period("Q").astype(str)
-    mine = clean[SURGEON] == surgeon
+    mine = clean[group_col] == value
     result = pd.DataFrame(
         {
-            "surgeon_rate": outcome[mine].groupby(quarter[mine]).mean(),
+            f"{group_col}_rate": outcome[mine].groupby(quarter[mine]).mean(),
             "others_rate": outcome[~mine].groupby(quarter[~mine]).mean(),
         }
     ).reindex(sorted(quarter.unique()))

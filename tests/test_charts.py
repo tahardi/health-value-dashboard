@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from app.charts import EMPTY_MESSAGE, funnel_plot, trend_chart, value_map
-from app.schema import SURGEON
+from app.schema import PROCEDURE, SURGEON
 
 NAN = math.nan
 QUADRANTS = {"Better, cheaper", "Better, costlier", "Worse, cheaper", "Worse, costlier"}
@@ -70,11 +70,11 @@ def test_value_map(
     assert lines == {("line", 21000.0, 0), ("line", 0, 16.0)}
 
 
-def funnel_table(surgeons: list[str], flags: list[str]) -> pd.DataFrame:
-    count = len(surgeons)
+def funnel_table(names: list[str], flags: list[str], group_col: str = SURGEON) -> pd.DataFrame:
+    count = len(names)
     return pd.DataFrame(
         {
-            SURGEON: surgeons,
+            group_col: names,
             "n": [10 * (i + 1) for i in range(count)],
             "events": [i for i in range(count)],
             "rate": [0.1 * i for i in range(count)],
@@ -88,8 +88,9 @@ def funnel_table(surgeons: list[str], flags: list[str]) -> pd.DataFrame:
     )
 
 
+@pytest.mark.parametrize("group_col", [SURGEON, PROCEDURE])
 @pytest.mark.parametrize(
-    ("surgeons", "flags", "labels"),
+    ("names", "flags", "labels"),
     [
         pytest.param(
             ["Dr. A", "Dr. B", "Dr. C"], ["", "", "high"], ["", "", "Dr. C"], id="flagged"
@@ -97,16 +98,21 @@ def funnel_table(surgeons: list[str], flags: list[str]) -> pd.DataFrame:
         pytest.param(["Dr. A", "Dr. B"], ["", ""], ["", ""], id="none flagged"),
     ],
 )
-def test_funnel_plot(surgeons: list[str], flags: list[str], labels: list[str]) -> None:
+def test_funnel_plot(
+    group_col: str,
+    names: list[str],
+    flags: list[str],
+    labels: list[str],
+) -> None:
     # given
-    table = funnel_table(surgeons, flags)
+    table = funnel_table(names, flags, group_col)
 
     # when
-    figure = funnel_plot(table, 50)
+    figure = funnel_plot(table, 50, group_col)
 
     # then
     points, center, *limits = figure.data
-    assert len(points.x) == len(surgeons)
+    assert len(points.x) == len(names)
     assert list(points.text) == labels
     assert len({m for m in points.marker.color}) == len(set(flags))
     assert list(center.x) == list(range(1, 51))
@@ -133,29 +139,38 @@ def test_funnel_plot_empty() -> None:
 
 
 @pytest.mark.parametrize(
-    ("quarters", "surgeon_rates", "points"),
+    ("group_col", "others", "quarters", "group_rates", "points"),
     [
-        pytest.param(["2025Q1", "2025Q2"], [0.1, NAN], 2, id="gap quarter"),
-        pytest.param([], [], 0, id="empty"),
+        pytest.param(
+            SURGEON, "Everyone else", ["2025Q1", "2025Q2"], [0.1, NAN], 2, id="gap quarter"
+        ),
+        pytest.param(PROCEDURE, "Other procedures", ["2025Q1"], [0.1], 1, id="other label"),
+        pytest.param(SURGEON, "Everyone else", [], [], 0, id="empty"),
     ],
 )
-def test_trend_chart(quarters: list[str], surgeon_rates: list[float], points: int) -> None:
+def test_trend_chart(
+    group_col: str,
+    others: str,
+    quarters: list[str],
+    group_rates: list[float],
+    points: int,
+) -> None:
     # given
     table = pd.DataFrame(
         {
             "quarter": quarters,
-            "surgeon_rate": surgeon_rates,
+            f"{group_col}_rate": group_rates,
             "others_rate": [0.2] * len(quarters),
         }
     )
 
     # when
-    figure = trend_chart(table, "Dr. A")
+    figure = trend_chart(table, "Dr. A", others)
 
     # then
     if points == 0:
         assert len(figure.data) == 0
         assert [a.text for a in figure.layout.annotations] == [EMPTY_MESSAGE]
         return
-    assert [t.name for t in figure.data] == ["Dr. A", "Everyone else"]
+    assert [t.name for t in figure.data] == ["Dr. A", others]
     assert all(len(t.x) == points for t in figure.data)

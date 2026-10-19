@@ -68,7 +68,7 @@ def _hover(row: dict[str, object]) -> str:
     )
 
 
-def funnel_plot(table: pd.DataFrame, max_n: int) -> go.Figure:
+def funnel_plot(table: pd.DataFrame, max_n: int, group_col: str = SURGEON) -> go.Figure:
     figure = go.Figure()
     figure.update_layout(
         xaxis_title="Cases",
@@ -86,13 +86,13 @@ def funnel_plot(table: pd.DataFrame, max_n: int) -> go.Figure:
             mode="markers+text",
             text=[
                 name if flag else ""
-                for name, flag in zip(table[SURGEON], table["flag"], strict=True)
+                for name, flag in zip(table[group_col], table["flag"], strict=True)
             ],
             textposition="top center",
             marker={"size": 10, "color": [FLAG_COLORS[flag] for flag in table["flag"]]},
-            hovertext=[_funnel_hover(r) for r in table.to_dict("records")],
+            hovertext=[_funnel_hover(r, group_col) for r in table.to_dict("records")],
             hoverinfo="text",
-            name="Surgeons",
+            name=group_col,
             showlegend=False,
         )
     )
@@ -121,7 +121,7 @@ def funnel_plot(table: pd.DataFrame, max_n: int) -> go.Figure:
     return figure
 
 
-def trend_chart(table: pd.DataFrame, surgeon: str) -> go.Figure:
+def trend_chart(table: pd.DataFrame, name: str, others: str = "Everyone else") -> go.Figure:
     figure = go.Figure()
     figure.update_layout(
         xaxis_title="Quarter",
@@ -130,9 +130,9 @@ def trend_chart(table: pd.DataFrame, surgeon: str) -> go.Figure:
     )
     if table.empty:
         return _empty(figure)
-    for column, name in (("surgeon_rate", surgeon), ("others_rate", "Everyone else")):
+    for column, label in ((table.columns[1], name), ("others_rate", others)):
         figure.add_trace(
-            go.Scatter(x=table["quarter"], y=table[column], mode="lines+markers", name=name)
+            go.Scatter(x=table["quarter"], y=table[column], mode="lines+markers", name=label)
         )
     return figure
 
@@ -142,7 +142,8 @@ def _empty(figure: go.Figure) -> go.Figure:
     return figure
 
 
-def _funnel_hover(row: dict[str, object]) -> str:
+def _funnel_hover(row: dict[str, object], group_col: str) -> str:
     return (
-        f"{row[SURGEON]}<br>Cases: {row['n']}<br>Events: {row['events']}<br>Rate: {row['rate']:.1%}"
+        f"{row[group_col]}<br>Cases: {row['n']}<br>Events: {row['events']}"
+        f"<br>Rate: {row['rate']:.1%}"
     )
