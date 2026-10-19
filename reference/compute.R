@@ -16,6 +16,7 @@ cases <- read.csv("data/sample.csv", stringsAsFactors = FALSE, na.strings = "")
 cases$function_gain <- cases$function_post - cases$function_pre
 rate_measures <- c("complication", "readmit_30d", "discharged_home")
 readmit_outlier <- "Dr. Smith"
+knee_procedure <- "Total Knee Replacement"
 
 mean_ci <- function(values) {
   x <- values[!is.na(values)]
@@ -72,19 +73,19 @@ surgeon_summary <- function(df, rate_col) {
   do.call(rbind, rows)
 }
 
-funnel <- function(df, rate_col) {
+funnel <- function(df, rate_col, group_col = "surgeon") {
   df <- df[!is.na(df[[rate_col]]), ]
   p0 <- mean(df[[rate_col]])
-  surgeons <- sort(unique(df$surgeon), method = "radix")
-  rows <- lapply(surgeons, function(s) {
-    x <- df[df$surgeon == s, rate_col]
+  groups <- sort(unique(df[[group_col]]), method = "radix")
+  rows <- lapply(groups, function(g) {
+    x <- df[df[[group_col]] == g, rate_col]
     n <- length(x)
     se <- sqrt(p0 * (1 - p0) / n)
     limit <- function(z, side) min(max(p0 + side * z * se, 0), 1)
     low998 <- limit(round(qnorm(0.999), 6), -1)
     high998 <- limit(round(qnorm(0.999), 6), 1)
-    data.frame(
-      surgeon = s,
+    out <- data.frame(
+      group = g,
       n = n,
       events = sum(x),
       rate = mean(x),
@@ -95,11 +96,13 @@ funnel <- function(df, rate_col) {
       high998 = high998,
       flag = if (mean(x) > high998) "high" else if (mean(x) < low998) "low" else ""
     )
+    names(out)[1] <- group_col
+    out
   })
   do.call(rbind, rows)
 }
 
-quarterly <- function(df, rate_col, surgeon) {
+quarterly <- function(df, rate_col, value, group_col = "surgeon") {
   df <- df[!is.na(df[[rate_col]]), ]
   date <- as.Date(df$surgery_date)
   df$quarter <- sprintf(
@@ -109,15 +112,17 @@ quarterly <- function(df, rate_col, surgeon) {
   )
   quarters <- sort(unique(df$quarter), method = "radix")
   rate_in <- function(q, mine) {
-    x <- df[df$quarter == q & (df$surgeon == surgeon) == mine, rate_col]
+    x <- df[df$quarter == q & (df[[group_col]] == value) == mine, rate_col]
     if (length(x) > 0) mean(x) else NA
   }
-  data.frame(
+  out <- data.frame(
     quarter = quarters,
-    surgeon_rate = sapply(quarters, rate_in, mine = TRUE),
+    selected_rate = sapply(quarters, rate_in, mine = TRUE),
     others_rate = sapply(quarters, rate_in, mine = FALSE),
     row.names = NULL
   )
+  names(out)[2] <- paste0(group_col, "_rate")
+  out
 }
 
 for (rate_col in rate_measures) {
@@ -142,6 +147,18 @@ for (rate_col in rate_measures) {
   write.csv(
     quarterly(cases, rate_col, readmit_outlier),
     file.path("tests", "golden", paste0("quarterly_", rate_col, ".csv")),
+    row.names = FALSE,
+    na = "NA"
+  )
+  write.csv(
+    funnel(cases, rate_col, "procedure"),
+    file.path("tests", "golden", paste0("funnel_procedure_", rate_col, ".csv")),
+    row.names = FALSE,
+    na = "NA"
+  )
+  write.csv(
+    quarterly(cases, rate_col, knee_procedure, "procedure"),
+    file.path("tests", "golden", paste0("quarterly_procedure_", rate_col, ".csv")),
     row.names = FALSE,
     na = "NA"
   )

@@ -5,14 +5,23 @@ import pandas as pd
 import pytest
 
 from app.data import load
+from app.schema import PROCEDURE
 from app.stats import funnel, headline, quarterly, surgeon_summary
 from scripts.generate_data import READMIT_OUTLIER
 
 ROOT = Path(__file__).resolve().parent.parent
 GOLDEN = sorted((ROOT / "tests" / "golden").glob("*.csv"))
+QUARTERLY_PROCEDURE = "Total Knee Replacement"
 STATISTICS = {
     "headline_": lambda df, rate_col: pd.DataFrame([headline(df, rate_col)]),
     "surgeon_summary_": surgeon_summary,
+    "funnel_procedure_": lambda df, rate_col: funnel(df, rate_col, PROCEDURE),
+    "quarterly_procedure_": lambda df, rate_col: quarterly(
+        df,
+        rate_col,
+        QUARTERLY_PROCEDURE,
+        PROCEDURE,
+    ),
     "funnel_": funnel,
     "quarterly_": lambda df, rate_col: quarterly(df, rate_col, READMIT_OUTLIER),
 }

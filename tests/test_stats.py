@@ -3,23 +3,13 @@ import math
 import pandas as pd
 import pytest
 
-from app.schema import COST, GAIN, SURGEON, SURGERY_DATE
+from app.schema import COST, GAIN, PROCEDURE, SURGEON, SURGERY_DATE
 from app.stats import funnel, headline, mean_ci, quarterly, surgeon_summary
 
 NAN = math.nan
 READMIT = "readmit_30d"
-FUNNEL_COLUMNS = [
-    "surgeon",
-    "n",
-    "events",
-    "rate",
-    "p0",
-    "low95",
-    "high95",
-    "low998",
-    "high998",
-    "flag",
-]
+FUNNEL_NUMBERS = ["n", "events", "rate", "p0", "low95", "high95", "low998", "high998", "flag"]
+GROUPS = pytest.mark.parametrize("group_col", [SURGEON, PROCEDURE])
 SUMMARY_COLUMNS = [
     "surgeon",
     "cases",
@@ -119,21 +109,25 @@ def test_headline() -> None:
     )
 
 
-def outcomes(spec: dict[str, tuple[int, int]], blanks: dict[str, int]) -> pd.DataFrame:
+def outcomes(
+    spec: dict[str, tuple[int, int]],
+    blanks: dict[str, int],
+    group_col: str,
+) -> pd.DataFrame:
     rows = []
-    for surgeon, (events, n) in spec.items():
-        rows += [(surgeon, i < events) for i in range(n)]
-        rows += [(surgeon, None)] * blanks.get(surgeon, 0)
+    for name, (events, n) in spec.items():
+        rows += [(name, i < events) for i in range(n)]
+        rows += [(name, None)] * blanks.get(name, 0)
     return pd.DataFrame(
         {
-            SURGEON: pd.array([r[0] for r in rows], dtype="string"),
+            group_col: pd.array([r[0] for r in rows], dtype="string"),
             READMIT: pd.array([r[1] for r in rows], dtype="boolean"),
         }
     )
 
 
 @pytest.mark.parametrize(
-    ("spec", "blanks", "surgeons", "flags", "first"),
+    ("spec", "blanks", "names", "flags", "first"),
     [
         pytest.param(
             {"Dr. C": (1, 1), "Dr. B": (5, 10), "Dr. A": (0, 10)},
@@ -161,28 +155,30 @@ def outcomes(spec: dict[str, tuple[int, int]], blanks: dict[str, int]) -> pd.Dat
         ),
     ],
 )
+@GROUPS
 def test_funnel(
+    group_col: str,
     spec: dict[str, tuple[int, int]],
     blanks: dict[str, int],
-    surgeons: list[str],
+    names: list[str],
     flags: list[str],
     first: tuple[float, ...],
 ) -> None:
     # given
-    df = outcomes(spec, blanks)
+    df = outcomes(spec, blanks, group_col)
 
     # when
-    result = funnel(df, READMIT)
+    result = funnel(df, READMIT, group_col)
 
     # then
-    assert list(result.columns) == FUNNEL_COLUMNS
-    assert list(result["surgeon"]) == surgeons
+    assert list(result.columns) == [group_col, *FUNNEL_NUMBERS]
+    assert list(result[group_col]) == names
     assert list(result["flag"]) == flags
     numbers = ["n", "events", "rate", "p0", "low95", "high95", "low998", "high998"]
     assert list(result.iloc[0][numbers]) == pytest.approx(first, abs=1e-6)
 
 
-def dated() -> pd.DataFrame:
+def dated(group_col: str) -> pd.DataFrame:
     rows = [
         ("2025-01-15", "Dr. X", True),
         ("2025-02-10", "Dr. X", False),
@@ -196,14 +192,14 @@ def dated() -> pd.DataFrame:
     return pd.DataFrame(
         {
             SURGERY_DATE: pd.to_datetime([r[0] for r in rows]),
-            SURGEON: pd.array([r[1] for r in rows], dtype="string"),
+            group_col: pd.array([r[1] for r in rows], dtype="string"),
             READMIT: pd.array([r[2] for r in rows], dtype="boolean"),
         }
     )
 
 
 @pytest.mark.parametrize(
-    ("surgeon", "quarters", "surgeon_rates", "others_rates"),
+    ("value", "quarters", "group_rates", "others_rates"),
     [
         pytest.param(
             "Dr. X",
@@ -217,24 +213,26 @@ def dated() -> pd.DataFrame:
             ["2025Q1", "2025Q2", "2025Q3"],
             [NAN, NAN, NAN],
             [0.5, 1.0, 1.0],
-            id="surgeon with no cases",
+            id="group with no cases",
         ),
     ],
 )
+@GROUPS
 def test_quarterly(
-    surgeon: str,
+    group_col: str,
+    value: str,
     quarters: list[str],
-    surgeon_rates: list[float],
+    group_rates: list[float],
     others_rates: list[float],
 ) -> None:
     # given
-    df = dated()
+    df = dated(group_col)
 
     # when
-    result = quarterly(df, READMIT, surgeon)
+    result = quarterly(df, READMIT, value, group_col)
 
     # then
-    assert list(result.columns) == ["quarter", "surgeon_rate", "others_rate"]
+    assert list(result.columns) == ["quarter", f"{group_col}_rate", "others_rate"]
     assert list(result["quarter"]) == quarters
-    assert list(result["surgeon_rate"]) == pytest.approx(surgeon_rates, nan_ok=True)
+    assert list(result[f"{group_col}_rate"]) == pytest.approx(group_rates, nan_ok=True)
     assert list(result["others_rate"]) == pytest.approx(others_rates, nan_ok=True)

@@ -15,7 +15,8 @@ Docs: [design](docs/design.md) and [implementation plan](docs/plan.md).
 ## What it looks like
 
 The Value tab shows headline numbers, a cost versus function gain value map, and a per-surgeon table. The Surgeons tab shows a funnel plot of each surgeon's rate against
-control limits, and a quarterly trend for one surgeon against everyone else.
+control limits, and a quarterly trend for one surgeon against everyone else. The Procedures tab shows the same two
+views for each procedure.
 
 ![Value tab](docs/screenshots/value.png)
 
